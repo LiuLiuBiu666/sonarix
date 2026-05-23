@@ -1,337 +1,723 @@
-<!DOCTYPE html>
-<html lang="vi">
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Crypto Hybrid Bot — Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <style>
-    body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
-    .navbar { background: #161b22; border-bottom: 1px solid #30363d; }
-    .card  { background: #161b22; border: 1px solid #30363d; border-radius: 12px; }
-    .card-header { background: #21262d; border-bottom: 1px solid #30363d; font-weight: 600; }
-    .badge-buy  { background: #1a7f37; color: #3fb950; border: 1px solid #2ea043; }
-    .badge-sell { background: #6e1c1c; color: #f85149; border: 1px solid #da3633; }
-    .badge-hold { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
-    .score-positive { color: #3fb950; font-weight: 700; }
-    .score-negative { color: #f85149; font-weight: 700; }
-    .score-neutral  { color: #8b949e; }
-    .stat-card { text-align: center; padding: 16px; }
-    .stat-value { font-size: 2rem; font-weight: 700; }
-    .stat-label { font-size: 0.8rem; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
-    .signal-row:hover { background: #21262d; }
-    .loading { color: #8b949e; font-style: italic; }
-    .live-dot { display: inline-block; width: 8px; height: 8px; background: #3fb950;
-                border-radius: 50%; animation: pulse 2s infinite; margin-right: 6px; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .progress-score { height: 6px; border-radius: 3px; background: #21262d; }
-    .last-update { font-size: 0.75rem; color: #8b949e; }
-    table { font-size: 0.85rem; }
-    th { color: #8b949e !important; font-weight: 500; border-color: #30363d !important; }
-    td { border-color: #21262d !important; vertical-align: middle; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonarix | Hybrid Quant Engine</title>
+    <meta name="description" content="Institutional-grade crypto signals combining Quantitative Technical Analysis with intelligence aggregated from multiple authoritative sources and synthesised by seasoned market experts. Real-time BUY/SELL signals with backtested performance.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy:      '#0B0F19',
+                        cyan:      '#00E5FF',
+                        purple:    '#7000FF',
+                        darkPanel: '#111827',
+                        darkCard:  '#0F1520',
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%':      { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        .glow-text           { text-shadow: 0 0 30px rgba(0, 229, 255, 0.6); }
+        .gradient-text       { background: linear-gradient(90deg, #FFFFFF 0%, #00E5FF 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .card-glow           { box-shadow: 0 0 40px rgba(0, 229, 255, 0.08); }
+        .card-glow-purple    { box-shadow: 0 0 40px rgba(112, 0, 255, 0.12); }
+        .btn-primary         { background: linear-gradient(135deg, #7000FF 0%, #00E5FF 100%); transition: opacity 0.2s, transform 0.2s; }
+        .btn-primary:hover   { opacity: 0.9; transform: translateY(-1px); }
+        .feature-icon        { background: linear-gradient(135deg, rgba(112,0,255,0.15), rgba(0,229,255,0.15)); }
+        .pricing-card        { transition: transform 0.2s, box-shadow 0.2s; }
+        .pricing-card:hover  { transform: translateY(-4px); }
+        .pricing-popular     { box-shadow: 0 0 0 2px #00E5FF, 0 0 60px rgba(0, 229, 255, 0.15); }
+        .step-line           { background: linear-gradient(180deg, #7000FF 0%, #00E5FF 100%); }
+        html                 { scroll-behavior: smooth; }
+        ::-webkit-scrollbar  { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0B0F19; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+        .signal-badge-buy    { background: rgba(26,127,55,0.3); color: #3fb950; border: 1px solid rgba(46,160,67,0.5); }
+        .ticker-row:hover    { background: rgba(0,229,255,0.03); }
+    </style>
 </head>
-<body>
+<body class="bg-navy text-white font-sans antialiased overflow-x-hidden">
 
-<!-- Navbar -->
-<nav class="navbar navbar-dark px-4 py-2 mb-4">
-  <span class="navbar-brand fw-bold">
-    <i class="bi bi-cpu-fill text-success me-2"></i>Crypto Hybrid Bot
-  </span>
-  <span class="text-muted small">
-    <span class="live-dot"></span>
-    <span id="last-update" class="last-update">Đang tải...</span>
-  </span>
-</nav>
+    <!-- Background ambient glows -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-purple/15 blur-[150px] rounded-full pointer-events-none z-0"></div>
+    <div class="fixed bottom-1/3 right-0 w-[400px] h-[400px] bg-cyan/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
 
-<div class="container-fluid px-4">
-
-  <!-- Stats Row -->
-  <div class="row g-3 mb-4" id="stats-row">
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
-        <div class="stat-value score-positive" id="stat-buy">—</div>
-        <div class="stat-label"><i class="bi bi-arrow-up-circle"></i> BUY Hôm Nay</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
-        <div class="stat-value score-negative" id="stat-sell">—</div>
-        <div class="stat-label"><i class="bi bi-arrow-down-circle"></i> SELL Hôm Nay</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
-        <div class="stat-value text-warning" id="stat-total">—</div>
-        <div class="stat-label"><i class="bi bi-bar-chart"></i> Tổng Tín Hiệu</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card stat-card">
-        <div class="stat-value text-info" id="stat-lastrun">—</div>
-        <div class="stat-label"><i class="bi bi-clock-history"></i> Lần Chạy Cuối</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Latest Signals per Symbol -->
-  <div class="row g-3 mb-4" id="symbol-cards">
-    {% for symbol in symbols %}
-    <div class="col-12 col-md-4">
-      <div class="card" id="card-{{ symbol }}">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-currency-bitcoin me-1"></i>{{ symbol }}</span>
-          <span class="badge badge-hold rounded-pill" id="badge-{{ symbol }}">LOADING</span>
-        </div>
-        <div class="card-body">
-          <div class="row text-center g-2">
-            <div class="col-4">
-              <div class="small text-muted">Final</div>
-              <div class="fw-bold" id="score-{{ symbol }}">—</div>
+    <!-- ══════════════════════════════════════
+         NAVBAR
+    ══════════════════════════════════════ -->
+    <nav class="sticky top-0 z-50 bg-navy/80 backdrop-blur-md border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <svg width="36" height="36" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="200" height="200" rx="40" fill="#0B0F19"/>
+                    <path d="M 40 40 A 60 60 0 0 0 40 160" fill="none" stroke="#00E5FF" stroke-width="12" stroke-linecap="round" opacity="0.5"/>
+                    <path d="M 70 70 A 30 30 0 0 0 70 130" fill="none" stroke="#00E5FF" stroke-width="12" stroke-linecap="round" opacity="0.8"/>
+                    <line x1="110" y1="60" x2="110" y2="140" stroke="#00E5FF" stroke-width="12" stroke-linecap="round"/>
+                    <line x1="150" y1="40" x2="150" y2="160" stroke="#7000FF" stroke-width="12" stroke-linecap="round"/>
+                </svg>
+                <span class="text-xl font-bold tracking-widest gradient-text">SONARIX</span>
             </div>
-            <div class="col-4">
-              <div class="small text-muted">Tech</div>
-              <div id="tech-{{ symbol }}">—</div>
+            <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
+                <a href="#features"     class="hover:text-white transition-colors">Features</a>
+                <a href="#how-it-works" class="hover:text-white transition-colors">How It Works</a>
+                <a href="#backtest"     class="hover:text-white transition-colors">Performance</a>
+                <a href="#pricing"      class="hover:text-white transition-colors">Pricing</a>
             </div>
-            <div class="col-4">
-              <div class="small text-muted">Win Rate</div>
-              <div id="wr-{{ symbol }}">—</div>
+            <a href="#pricing" class="btn-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-[0_0_15px_rgba(0,229,255,0.3)]">
+                Get Started
+            </a>
+        </div>
+    </nav>
+
+    <!-- ══════════════════════════════════════
+         HERO
+    ══════════════════════════════════════ -->
+    <section class="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-20">
+        <div class="grid lg:grid-cols-2 gap-16 items-center">
+
+            <!-- Left: Copy -->
+            <div>
+                <div class="inline-flex items-center gap-2 border border-purple/40 bg-purple/10 text-purple px-4 py-1.5 rounded-full text-xs font-bold tracking-wider mb-8">
+                    <span class="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse"></span>
+                    ALPHA V1.0 — LIVE ON BINANCE
+                </div>
+                <h1 class="text-5xl md:text-6xl font-extrabold leading-[1.1] mb-6">
+                    Discipline is the<br>only edge that
+                    <span class="gradient-text glow-text"> compounds.</span>
+                </h1>
+                <p class="text-gray-400 text-lg mb-10 leading-relaxed max-w-xl">
+                    Sonarix is a quantitative signal engine — not a tipster. Every entry is derived from multi-indicator confluence, cross-timeframe validation, and intelligence aggregated from multiple sources and interpreted by experienced market experts. Signals are backtested, scored, and delivered. Discretion is removed by design.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="#pricing" class="btn-primary text-center text-white px-8 py-3.5 rounded-lg font-bold shadow-[0_0_20px_rgba(0,229,255,0.25)]">
+                        Join Signal Channel — $89/mo
+                    </a>
+                    <a href="#how-it-works" class="border border-gray-700 text-white px-8 py-3.5 rounded-lg font-semibold hover:border-cyan/60 hover:text-cyan transition-colors text-center">
+                        See How It Works
+                    </a>
+                </div>
+                <div class="mt-10 flex items-center gap-6 text-sm text-gray-500">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-cyan" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        No coding required
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-cyan" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        Cancel anytime
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-cyan" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        Backtested strategy
+                    </div>
+                </div>
             </div>
-          </div>
-          <div class="progress progress-score mt-2">
-            <div class="progress-bar" id="bar-{{ symbol }}" style="width:0%"></div>
-          </div>
-          <div class="text-muted small mt-2" id="time-{{ symbol }}">—</div>
+
+            <!-- Right: Live signal card -->
+            <div class="relative animate-float">
+                <div class="absolute inset-0 bg-cyan/5 blur-3xl rounded-3xl"></div>
+                <div class="relative bg-darkPanel rounded-2xl border border-gray-800 shadow-2xl p-6 card-glow">
+                    <div class="absolute -top-3 right-6 bg-cyan text-navy text-xs font-bold px-3 py-1 rounded-full shadow-[0_0_12px_#00E5FF] animate-pulse">
+                        ● LIVE SIGNAL
+                    </div>
+                    <div class="flex justify-between items-start mb-5 pb-4 border-b border-gray-800">
+                        <div>
+                            <h3 class="text-lg font-bold">BTC / USDT</h3>
+                            <span class="text-gray-500 text-xs">4H · Binance · Multi-TF Confirmed</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-bold text-green-400">$64,250.00</div>
+                            <span class="text-green-500/80 text-xs">+2.4% (24h)</span>
+                        </div>
+                    </div>
+                    <div class="bg-darkCard rounded-xl p-4 mb-4 border border-gray-800/60">
+                        <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Confluence Score</div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-4xl font-black text-cyan">+65</div>
+                            <div class="flex-1">
+                                <div class="w-full bg-gray-800 rounded-full h-2 mb-1.5">
+                                    <div class="bg-gradient-to-r from-purple to-cyan h-2 rounded-full" style="width:82%"></div>
+                                </div>
+                                <div class="text-xs text-gray-500">Signal strength: Strong</div>
+                            </div>
+                            <div class="text-xs font-bold text-cyan bg-cyan/10 border border-cyan/30 px-2.5 py-1 rounded-md">STRONG BUY</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-darkCard rounded-xl p-3.5 border border-gray-800/60">
+                            <div class="flex items-center gap-1.5 mb-2">
+                                <svg class="w-4 h-4 text-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4"/></svg>
+                                <span class="text-xs font-bold text-cyan">Technical</span>
+                            </div>
+                            <div class="text-lg font-bold text-white mb-0.5">+70</div>
+                            <p class="text-xs text-gray-500">RSI 55, above EMA200. MACD crossover confirmed.</p>
+                        </div>
+                        <div class="bg-darkCard rounded-xl p-3.5 border border-gray-800/60">
+                            <div class="flex items-center gap-1.5 mb-2">
+                                <svg class="w-4 h-4 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
+                                <span class="text-xs font-bold text-purple">Market Pulse</span>
+                            </div>
+                            <div class="text-lg font-bold text-white mb-0.5">+55</div>
+                            <p class="text-xs text-gray-500">Multi-source aggregation: Bullish consensus. Smart money accumulating.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-gray-500 bg-darkCard rounded-lg px-3 py-2.5 border border-gray-800/60">
+                        <span>Estimated Win Rate</span>
+                        <span class="font-bold text-green-400">72%</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+    </section>
 
-  <!-- Main Content -->
-  <div class="row g-3">
-
-    <!-- Signal History Table -->
-    <div class="col-12 col-lg-8">
-      <div class="card">
-        <div class="card-header">
-          <i class="bi bi-table me-2"></i>Lịch Sử Tín Hiệu
-          <button class="btn btn-sm btn-outline-secondary float-end" onclick="loadSignals()">
-            <i class="bi bi-arrow-clockwise"></i>
-          </button>
+    <!-- ══════════════════════════════════════
+         TRUST STATS BAR
+    ══════════════════════════════════════ -->
+    <section class="relative z-10 border-y border-white/5 bg-darkPanel/40 py-10">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+                <div class="text-3xl font-black gradient-text mb-1">5</div>
+                <div class="text-sm text-gray-400">Tracked Symbols</div>
+            </div>
+            <div>
+                <div class="text-3xl font-black gradient-text mb-1">52%+</div>
+                <div class="text-sm text-gray-400">Backtested Win Rate</div>
+            </div>
+            <div>
+                <div class="text-3xl font-black gradient-text mb-1">4h</div>
+                <div class="text-sm text-gray-400">Signal Refresh Cycle</div>
+            </div>
+            <div>
+                <div class="text-3xl font-black gradient-text mb-1">2000+</div>
+                <div class="text-sm text-gray-400">Historical Candles Tested</div>
+            </div>
         </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-dark table-hover mb-0">
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th>Action</th>
-                  <th>Score</th>
-                  <th>Win Rate</th>
-                  <th>Thời gian</th>
-                  <th>Đã gửi</th>
-                </tr>
-              </thead>
-              <tbody id="signals-tbody">
-                <tr><td colspan="6" class="text-center loading py-4">Đang tải...</td></tr>
-              </tbody>
-            </table>
-          </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         COIN SELECTOR
+    ══════════════════════════════════════ -->
+    <section id="analysis" class="relative z-10 max-w-7xl mx-auto px-6 py-24">
+        <div class="text-center mb-12">
+            <div class="text-xs font-bold tracking-widest text-cyan uppercase mb-4">Member Feature</div>
+            <h2 class="text-4xl font-extrabold mb-4">Select Your Market</h2>
+            <p class="text-gray-400 max-w-xl mx-auto">VIP members can filter the analysis view by symbol. Each asset is tracked independently across its own technical, expert, and timeframe layers.</p>
         </div>
-      </div>
-    </div>
 
-    <!-- Backtest Results -->
-    <div class="col-12 col-lg-4">
-      <div class="card">
-        <div class="card-header">
-          <i class="bi bi-graph-up-arrow me-2"></i>Kết Quả Backtest
+        <!-- Coin selector tabs -->
+        <div class="flex flex-wrap justify-center gap-3 mb-10" id="coin-tabs">
+            <button onclick="selectCoin('BTC')" id="tab-BTC" class="coin-tab active-coin px-5 py-2.5 rounded-xl text-sm font-bold border border-cyan/60 text-cyan bg-cyan/10 transition-all">
+                <span class="mr-1.5 text-amber-400">₿</span> BTC
+            </button>
+            <button onclick="selectCoin('ETH')" id="tab-ETH" class="coin-tab px-5 py-2.5 rounded-xl text-sm font-bold border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white bg-transparent transition-all">
+                <span class="mr-1.5 text-blue-400">Ξ</span> ETH
+            </button>
+            <button onclick="selectCoin('SOL')" id="tab-SOL" class="coin-tab px-5 py-2.5 rounded-xl text-sm font-bold border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white bg-transparent transition-all">
+                <span class="mr-1.5 text-purple">◎</span> SOL
+            </button>
+            <button onclick="selectCoin('BNB')" id="tab-BNB" class="coin-tab px-5 py-2.5 rounded-xl text-sm font-bold border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white bg-transparent transition-all">
+                <span class="mr-1.5 text-yellow-400">◈</span> BNB
+            </button>
+            <button onclick="selectCoin('XRP')" id="tab-XRP" class="coin-tab px-5 py-2.5 rounded-xl text-sm font-bold border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white bg-transparent transition-all">
+                <span class="mr-1.5 text-cyan">✕</span> XRP
+            </button>
         </div>
-        <div class="card-body" id="backtest-body">
-          <div class="loading text-center py-3">Đang tải...</div>
+
+        <!-- Analysis panel -->
+        <div class="max-w-2xl mx-auto bg-darkPanel rounded-2xl border border-gray-800 p-6 card-glow" id="analysis-panel">
+            <!-- Populated by JS -->
         </div>
-      </div>
-    </div>
 
-  </div><!-- /row -->
-</div><!-- /container -->
+        <p class="text-center text-xs text-gray-600 mt-6">Data shown is illustrative. Live analysis available to VIP subscribers via Telegram channel.</p>
+    </section>
 
-<script>
-// ── Helpers ───────────────────────────────────────────────────
-function scoreClass(score) {
-  if (score > 0)  return 'score-positive';
-  if (score < 0)  return 'score-negative';
-  return 'score-neutral';
-}
+    <script>
+    const COIN_DATA = {
+        BTC: {
+            name: 'Bitcoin', symbol: 'BTC/USDT', price: '$64,250', change: '+2.4%', changeUp: true,
+            score: '+65', scoreWidth: '82', signal: 'STRONG BUY', signalClass: 'text-cyan border-cyan/30 bg-cyan/10',
+            tech: '+70', techNote: 'RSI 55 · Above EMA200 · MACD histogram expanding bullish · 4H/1H aligned.',
+            pulse: '+55', pulseNote: 'Multi-source consensus: bullish. Multiple high-conviction indicators flagging accumulation. On-chain: Exchange outflows elevated.',,
+            sources: 'Multi-source aggregation'
+        },
+        ETH: {
+            name: 'Ethereum', symbol: 'ETH/USDT', price: '$3,480', change: '+1.1%', changeUp: true,
+            score: '+42', scoreWidth: '60', signal: 'BUY', signalClass: 'text-green-400 border-green-500/30 bg-green-500/10',
+            tech: '+50', techNote: 'RSI 52 · EMA200 support holding · Bollinger mid-band reclaimed · 4H confirms.',
+            pulse: '+30', pulseNote: 'Multi-source: Cautiously positive. Developer activity elevated. No major whale moves detected.',,
+            sources: 'Multi-source aggregation'
+        },
+        SOL: {
+            name: 'Solana', symbol: 'SOL/USDT', price: '$142.80', change: '-0.8%', changeUp: false,
+            score: '-12', scoreWidth: '30', signal: 'HOLD', signalClass: 'text-gray-400 border-gray-600 bg-gray-800/50',
+            tech: '-20', techNote: 'RSI 46 · Below EMA50 · Indecisive around BB midband · Timeframes split.',
+            pulse: '+8', pulseNote: 'Multi-source: Mixed views. Expert commentary cautious ahead of token unlock event next week.',,
+            sources: 'Multi-source aggregation'
+        },
+        BNB: {
+            name: 'BNB', symbol: 'BNB/USDT', price: '$598.40', change: '+3.2%', changeUp: true,
+            score: '+58', scoreWidth: '74', signal: 'STRONG BUY', signalClass: 'text-cyan border-cyan/30 bg-cyan/10',
+            tech: '+65', techNote: 'RSI 61 · Breakout above descending resistance · Volume +180% MA20 · 4H/1H both bullish.',
+            pulse: '+45', pulseNote: 'Multi-source: Strong long positioning from key analysts. Exchange spot volume spiking. Institutional commentary constructive.',,
+            sources: 'Multi-source aggregation'
+        },
+        XRP: {
+            name: 'XRP', symbol: 'XRP/USDT', price: '$0.624', change: '-1.9%', changeUp: false,
+            score: '-44', scoreWidth: '60', signal: 'SELL', signalClass: 'text-red-400 border-red-500/30 bg-red-500/10',
+            tech: '-50', techNote: 'RSI 38 · Below EMA200 · Testing BB lower band · Distribution pattern active.',
+            pulse: '-35', pulseNote: 'Multi-source: Bearish narrative strengthening. Regulatory FUD resurfacing across multiple analyst communities.',,
+            sources: 'Multi-source aggregation'
+        }
+    };
 
-function actionBadge(action) {
-  const map = { BUY:'badge-buy', SELL:'badge-sell', HOLD:'badge-hold' };
-  return `<span class="badge ${map[action]||'badge-hold'} rounded-pill">${action}</span>`;
-}
+    function selectCoin(symbol) {
+        // Update tab styles
+        document.querySelectorAll('.coin-tab').forEach(btn => {
+            btn.classList.remove('active-coin', 'border-cyan/60', 'text-cyan', 'bg-cyan/10');
+            btn.classList.add('border-gray-700', 'text-gray-400', 'bg-transparent');
+        });
+        const activeTab = document.getElementById('tab-' + symbol);
+        activeTab.classList.remove('border-gray-700', 'text-gray-400', 'bg-transparent');
+        activeTab.classList.add('active-coin', 'border-cyan/60', 'text-cyan', 'bg-cyan/10');
 
-function relativeTime(isoStr) {
-  if (!isoStr) return '—';
-  const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
-  if (diff < 60)  return `${diff}s trước`;
-  if (diff < 3600) return `${Math.floor(diff/60)}ph trước`;
-  if (diff < 86400) return `${Math.floor(diff/3600)}h trước`;
-  return `${Math.floor(diff/86400)}d trước`;
-}
+        const d = COIN_DATA[symbol];
+        const changeColor = d.changeUp ? 'text-green-400' : 'text-red-400';
+        const scoreColor = parseInt(d.score) >= 40 ? 'text-cyan' : parseInt(d.score) <= -40 ? 'text-red-400' : 'text-gray-300';
+        const tfBadge = d.signal === 'HOLD' ? 'text-gray-400 border-gray-600 bg-gray-800/50' : (parseInt(d.score) > 0 ? 'text-cyan border-cyan/30 bg-cyan/10' : 'text-red-400 border-red-500/30 bg-red-500/10');
 
-function fmtScore(v) {
-  if (v == null) return '—';
-  const c = scoreClass(v);
-  return `<span class="${c}">${v > 0 ? '+' : ''}${Number(v).toFixed(1)}</span>`;
-}
-
-// ── Stats ─────────────────────────────────────────────────────
-async function loadStats() {
-  try {
-    const r = await fetch('/api/stats');
-    const d = await r.json();
-    if (!d.ok) return;
-    const s = d.data;
-    document.getElementById('stat-buy').textContent   = s.today.buy;
-    document.getElementById('stat-sell').textContent  = s.today.sell;
-    document.getElementById('stat-total').textContent = s.all_time.total_signals;
-
-    // Thời gian lần chạy cuối
-    const lr = s.last_run ? relativeTime(s.last_run) : 'Chưa chạy';
-    document.getElementById('stat-lastrun').textContent = lr;
-    document.getElementById('last-update').textContent = 'Cập nhật: ' + new Date().toLocaleTimeString('vi-VN');
-  } catch(e) { console.error('loadStats:', e); }
-}
-
-// ── Latest Signals (symbol cards) ─────────────────────────────
-async function loadLatest() {
-  try {
-    const r = await fetch('/api/latest');
-    const d = await r.json();
-    if (!d.ok) return;
-
-    // Also load recent tech scores for symbol cards
-    const techR = await fetch('/api/tech?limit=30');
-    const techD = await techR.json();
-    const techBySymbol = {};
-    if (techD.ok) {
-      techD.data.forEach(t => { if (!techBySymbol[t.symbol]) techBySymbol[t.symbol] = t.tech_score; });
+        document.getElementById('analysis-panel').innerHTML = `
+            <div class="flex justify-between items-start mb-5 pb-4 border-b border-gray-800">
+                <div>
+                    <h3 class="text-lg font-bold">${d.symbol}</h3>
+                    <span class="text-gray-500 text-xs">4H · Binance · Multi-TF Active</span>
+                </div>
+                <div class="text-right">
+                    <div class="text-xl font-bold ${changeColor}">${d.price}</div>
+                    <span class="text-xs ${changeColor}">${d.change} (24h)</span>
+                </div>
+            </div>
+            <div class="bg-darkCard rounded-xl p-4 mb-4 border border-gray-800/60">
+                <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Confluence Score</div>
+                <div class="flex items-center gap-4">
+                    <div class="text-4xl font-black ${scoreColor}">${d.score}</div>
+                    <div class="flex-1">
+                        <div class="w-full bg-gray-800 rounded-full h-2 mb-1.5">
+                            <div class="bg-gradient-to-r from-purple to-cyan h-2 rounded-full transition-all duration-500" style="width:${d.scoreWidth}%"></div>
+                        </div>
+                        <div class="text-xs text-gray-500">Composite signal strength</div>
+                    </div>
+                    <div class="text-xs font-bold px-2.5 py-1 rounded-md border ${d.signalClass}">${d.signal}</div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-darkCard rounded-xl p-3.5 border border-gray-800/60">
+                    <div class="text-xs font-bold text-cyan mb-2 uppercase tracking-wider">Technical</div>
+                    <div class="text-lg font-bold text-white mb-1">${d.tech}</div>
+                    <p class="text-xs text-gray-500 leading-relaxed">${d.techNote}</p>
+                </div>
+                <div class="bg-darkCard rounded-xl p-3.5 border border-gray-800/60">
+                    <div class="text-xs font-bold mb-2 uppercase tracking-wider" style="color:#7000FF">Market Pulse</div>
+                    <div class="text-lg font-bold text-white mb-1">${d.pulse}</div>
+                    <p class="text-xs text-gray-500 leading-relaxed">${d.pulseNote}</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between text-xs bg-darkCard rounded-lg px-3 py-2.5 border border-gray-800/60">
+                <span class="text-gray-500">Sources</span>
+                <span class="font-medium text-gray-400">${d.sources}</span>
+            </div>
+        `;
     }
 
-    d.data.forEach(sig => {
-      const sym = sig.symbol;
-      const badge  = document.getElementById(`badge-${sym}`);
-      const scoreEl = document.getElementById(`score-${sym}`);
-      const techEl = document.getElementById(`tech-${sym}`);
-      const wrEl   = document.getElementById(`wr-${sym}`);
-      const barEl  = document.getElementById(`bar-${sym}`);
-      const timeEl = document.getElementById(`time-${sym}`);
+    // Init
+    selectCoin('BTC');
+    </script>
 
-      if (!badge) return;
-
-      const action = sig.action;
-      badge.textContent = action;
-      badge.className = `badge ${action==='BUY'?'badge-buy':action==='SELL'?'badge-sell':'badge-hold'} rounded-pill`;
-
-      scoreEl.innerHTML = fmtScore(sig.final_score);
-      techEl.innerHTML  = techBySymbol[sym] != null ? fmtScore(techBySymbol[sym]) : '—';
-      wrEl.textContent  = sig.win_rate_estimated ? (sig.win_rate_estimated*100).toFixed(0)+'%' : '—';
-      timeEl.textContent = relativeTime(sig.created_at);
-
-      // Progress bar
-      const pct = Math.min(Math.abs(sig.final_score), 100);
-      barEl.style.width = pct + '%';
-      barEl.className = `progress-bar ${action==='BUY'?'bg-success':action==='SELL'?'bg-danger':'bg-secondary'}`;
-    });
-  } catch(e) { console.error('loadLatest:', e); }
-}
-
-// ── Signal History Table ──────────────────────────────────────
-async function loadSignals() {
-  const tbody = document.getElementById('signals-tbody');
-  tbody.innerHTML = '<tr><td colspan="6" class="text-center loading py-4">Đang tải...</td></tr>';
-  try {
-    const r = await fetch('/api/signals?limit=25');
-    const d = await r.json();
-    if (!d.ok) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Lỗi tải dữ liệu</td></tr>'; return; }
-
-    if (!d.data.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Chưa có tín hiệu nào</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = d.data.map(sig => `
-      <tr class="signal-row">
-        <td><strong>${sig.symbol}</strong></td>
-        <td>${actionBadge(sig.action)}</td>
-        <td>${fmtScore(sig.final_score)}</td>
-        <td>${sig.win_rate_estimated ? (sig.win_rate_estimated*100).toFixed(0)+'%' : '—'}</td>
-        <td class="text-muted">${relativeTime(sig.created_at)}</td>
-        <td>${sig.is_sent ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-clock text-warning"></i>'}</td>
-      </tr>
-    `).join('');
-  } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Lỗi kết nối</td></tr>';
-  }
-}
-
-// ── Backtest Results ──────────────────────────────────────────
-async function loadBacktest() {
-  const body = document.getElementById('backtest-body');
-  try {
-    const r = await fetch('/api/backtest');
-    const d = await r.json();
-    if (!d.ok || !d.data.length) {
-      body.innerHTML = '<div class="text-muted small text-center py-3">Chưa có dữ liệu backtest.<br>Chạy: <code>python -m module_backtest.main_backtest</code></div>';
-      return;
-    }
-
-    body.innerHTML = d.data.map(bt => `
-      <div class="mb-3 pb-3 border-bottom border-secondary">
-        <div class="d-flex justify-content-between mb-1">
-          <strong>${bt.symbol}</strong>
-          <span class="badge ${bt.win_rate >= 0.55 ? 'bg-success' : bt.win_rate >= 0.5 ? 'bg-warning text-dark' : 'bg-danger'} rounded-pill">
-            WR ${(bt.win_rate*100).toFixed(1)}%
-          </span>
+    <!-- ══════════════════════════════════════
+         HOW IT WORKS
+    ══════════════════════════════════════ -->
+    <section id="how-it-works" class="relative z-10 max-w-7xl mx-auto px-6 py-24">
+        <div class="text-center mb-16">
+            <div class="text-xs font-bold tracking-widest text-cyan uppercase mb-4">The Engine</div>
+            <h2 class="text-4xl font-extrabold mb-4">What Runs Every Cycle</h2>
+            <p class="text-gray-400 max-w-2xl mx-auto">Markets reward preparation, not reaction. Sonarix executes a closed-loop four-stage pipeline every hour — structured data in, actionable edge out. No discretion, no hesitation.</p>
         </div>
-        <div class="row text-center g-1 small">
-          <div class="col-4">
-            <div class="text-muted">Trades</div>
-            <div>${bt.total_trades}</div>
-          </div>
-          <div class="col-4">
-            <div class="text-muted">PF</div>
-            <div class="${bt.profit_factor >= 1.5 ? 'text-success' : 'text-warning'}">${bt.profit_factor?.toFixed(2) ?? '—'}</div>
-          </div>
-          <div class="col-4">
-            <div class="text-muted">Sharpe</div>
-            <div class="${bt.sharpe_ratio >= 0.5 ? 'text-success' : 'text-warning'}">${bt.sharpe_ratio?.toFixed(2) ?? '—'}</div>
-          </div>
-          <div class="col-6">
-            <div class="text-muted">Total PnL</div>
-            <div class="${bt.total_pnl_pct >= 0 ? 'score-positive' : 'score-negative'}">${bt.total_pnl_pct > 0 ? '+' : ''}${bt.total_pnl_pct?.toFixed(1)}%</div>
-          </div>
-          <div class="col-6">
-            <div class="text-muted">Max DD</div>
-            <div class="text-warning">${bt.max_drawdown_pct?.toFixed(1)}%</div>
-          </div>
+        <div class="grid lg:grid-cols-2 gap-x-16 gap-y-12">
+
+            <div class="border-l-2 border-cyan/40 pl-6">
+                <h3 class="text-lg font-bold mb-3">Raw Market Structure</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">250 OHLCV candles are pulled from Binance per symbol, per cycle. RSI, EMA200, MACD histogram delta, Bollinger Band positioning, and volume relative to its 20-period average are computed in a single vectorized pass. No interpolation, no smoothing — price action read as it is, not as you want it to be.</p>
+            </div>
+
+            <div class="border-l-2 border-purple/40 pl-6">
+                <h3 class="text-lg font-bold mb-3">Expert Intelligence Aggregation</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">Market intelligence is aggregated from multiple authoritative sources — spanning social communities, leading crypto media outlets, and on-chain data feeds — then interpreted by seasoned analysts with verified track records. The result is a directional view rooted in how practitioners who are actually in the market are positioning, not automated headline parsing.</p>
+            </div>
+
+            <div class="border-l-2 border-cyan/40 pl-6">
+                <h3 class="text-lg font-bold mb-3">Weighted Confluence</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">Technical score carries 60% weight; sentiment the remaining 40%. The composite must clear ±40 before a signal is issued — a threshold derived from backtesting, not convention. Identical signals within a 4-hour window are suppressed entirely. The engine does not repeat itself; if the edge has already been communicated, it stays silent.</p>
+            </div>
+
+            <div class="border-l-2 border-purple/40 pl-6">
+                <h3 class="text-lg font-bold mb-3">Tiered Signal Release</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">VIP subscribers receive the complete analytical output — composite score, module breakdown, expert market thesis derived from multi-source aggregation, and contextual win-rate data — 1 to 4 hours before the broader market moves. Free-tier members receive a condensed alert on a 24-hour delay. PRO members have access to the full coin universe with custom watchlists. Information asymmetry is the product. The edge belongs to those positioned before the crowd.</p>
+            </div>
+
         </div>
-      </div>
-    `).join('');
-  } catch(e) {
-    body.innerHTML = '<div class="text-danger small">Lỗi tải backtest</div>';
-  }
-}
+    </section>
 
-// ── Init & Auto-refresh ───────────────────────────────────────
-async function refresh() {
-  await Promise.all([loadStats(), loadLatest(), loadSignals(), loadBacktest()]);
-}
+    <!-- ══════════════════════════════════════
+         FEATURES
+    ══════════════════════════════════════ -->
+    <section id="features" class="relative z-10 bg-darkPanel/30 border-y border-white/5 py-24">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <div class="text-xs font-bold tracking-widest text-cyan uppercase mb-4">The Architecture</div>
+                <h2 class="text-4xl font-extrabold mb-4">No Black Boxes. No Guesswork.</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">Every analytical layer is deliberate. Each module addresses a specific failure mode that discretionary trading introduces. Here is what is running under the hood.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-refresh();
-setInterval(refresh, 60_000);  // Tự động refresh mỗi 60 giây
-</script>
+                <div class="bg-darkCard rounded-2xl p-7 border border-gray-800 card-glow hover:border-cyan/30 transition-colors">
+                    <div class="text-xs font-bold text-cyan uppercase tracking-wider mb-3">Structure Layer</div>
+                    <h3 class="font-bold text-base mb-3">Multi-Timeframe Confirmation</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">A directional call on the 4H chart is only valid if the 1H structure supports it. When the two timeframes conflict, the system issues HOLD — not a directional bias. Opposing readings are penalised in the composite score, not discarded. Most false breakouts are caught here.</p>
+                </div>
+
+                <div class="bg-darkCard rounded-2xl p-7 border border-gray-800 card-glow hover:border-cyan/30 transition-colors">
+                    <div class="text-xs font-bold uppercase tracking-wider mb-3" style="color:#7000FF">Volatility Layer</div>
+                    <h3 class="font-bold text-base mb-3">Bollinger Bands &amp; Volume</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Band positioning identifies statistically extreme price extensions — conditions where mean-reversion probability is elevated. Volume above 1.5× its 20-period average confirms institutional participation and amplifies MACD-based scores by 20%. High volume at band extremes is one of the cleanest setups in liquid markets.</p>
+                </div>
+
+                <div class="bg-darkCard rounded-2xl p-7 border border-gray-800 card-glow hover:border-cyan/30 transition-colors">
+                    <div class="text-xs font-bold text-cyan uppercase tracking-wider mb-3">Macro Layer</div>
+                    <h3 class="font-bold text-base mb-3">Expert Market Intelligence</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Price does not move in isolation. Market signals are aggregated from multiple sources — social communities, professional crypto media, and on-chain sentiment feeds — then synthesised by experienced analysts into a directional score. When this score diverges sharply from technicals, it historically precedes reversals. Catching that divergence early is what this layer is built to do.</p>
+                </div>
+
+                <div class="bg-darkCard rounded-2xl p-7 border border-gray-800 card-glow hover:border-cyan/30 transition-colors">
+                    <div class="text-xs font-bold uppercase tracking-wider mb-3" style="color:#7000FF">Validation Layer</div>
+                    <h3 class="font-bold text-base mb-3">Historical Backtest Engine</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Strategy credibility is non-negotiable. Every signal rule is tested against 2000 historical candles before deployment. Reported metrics — Win Rate, Profit Factor, Sharpe Ratio, Maximum Drawdown, Expectancy — are computed on out-of-sample data. If the backtest does not justify the risk, the signal rule is not used.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         BACKTEST PERFORMANCE
+    ══════════════════════════════════════ -->
+    <section id="backtest" class="relative z-10 max-w-7xl mx-auto px-6 py-24">
+        <div class="grid lg:grid-cols-2 gap-16 items-center">
+
+            <div>
+                <div class="text-xs font-bold tracking-widest text-cyan uppercase mb-4">Verified Results</div>
+                <h2 class="text-4xl font-extrabold mb-5">Strategy Performance</h2>
+                <p class="text-gray-400 leading-relaxed mb-8">Every signal strategy is stress-tested against 2000 candles (~333 days) of real market data before it ever reaches your Telegram. No cherry-picked trades. No lookahead bias.</p>
+                <ul class="space-y-3 text-sm text-gray-300">
+                    <li class="flex items-center gap-3">
+                        <span class="w-5 h-5 rounded-full bg-cyan/20 border border-cyan/30 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-3 h-3 text-cyan" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        </span>
+                        Fixed-duration hold: 12 candles (48h on the 4H chart)
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="w-5 h-5 rounded-full bg-cyan/20 border border-cyan/30 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-3 h-3 text-cyan" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        </span>
+                        Metrics: Win Rate, Profit Factor, Sharpe, Max Drawdown
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="w-5 h-5 rounded-full bg-cyan/20 border border-cyan/30 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-3 h-3 text-cyan" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        </span>
+                        Refreshed daily with new market data
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bg-darkPanel rounded-2xl border border-gray-800 overflow-hidden card-glow">
+                <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+                    <span class="font-semibold text-sm">Backtest Results — 4H · 2000 Candles</span>
+                    <span class="text-xs text-gray-500">48h Hold</span>
+                </div>
+                <div class="divide-y divide-gray-800/60">
+                    <div class="px-5 py-4 ticker-row">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center text-xs font-bold text-amber-400">₿</div>
+                                <span class="font-semibold">BTC/USDT</span>
+                            </div>
+                            <span class="signal-badge-buy text-xs font-bold px-2.5 py-1 rounded-md">59.8% WR</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 text-xs">
+                            <div><div class="text-gray-500 mb-1">Trades</div><div class="font-semibold">245</div></div>
+                            <div><div class="text-gray-500 mb-1">PF</div><div class="font-semibold text-yellow-400">1.17</div></div>
+                            <div><div class="text-gray-500 mb-1">Total PnL</div><div class="font-semibold text-green-400">+33.8%</div></div>
+                            <div><div class="text-gray-500 mb-1">Max DD</div><div class="font-semibold text-orange-400">50.2%</div></div>
+                        </div>
+                    </div>
+                    <div class="px-5 py-4 ticker-row">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">Ξ</div>
+                                <span class="font-semibold">ETH/USDT</span>
+                            </div>
+                            <span class="text-xs text-gray-500">Pending refresh</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 text-xs">
+                            <div><div class="text-gray-500 mb-1">Trades</div><div class="font-semibold">—</div></div>
+                            <div><div class="text-gray-500 mb-1">PF</div><div class="font-semibold">—</div></div>
+                            <div><div class="text-gray-500 mb-1">Total PnL</div><div class="font-semibold">—</div></div>
+                            <div><div class="text-gray-500 mb-1">Max DD</div><div class="font-semibold">—</div></div>
+                        </div>
+                    </div>
+                    <div class="px-5 py-4 ticker-row">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-purple/20 flex items-center justify-center text-xs font-bold" style="color:#7000FF">◎</div>
+                                <span class="font-semibold">SOL/USDT</span>
+                            </div>
+                            <span class="text-xs text-gray-500">Pending refresh</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 text-xs">
+                            <div><div class="text-gray-500 mb-1">Trades</div><div class="font-semibold">—</div></div>
+                            <div><div class="text-gray-500 mb-1">PF</div><div class="font-semibold">—</div></div>
+                            <div><div class="text-gray-500 mb-1">Total PnL</div><div class="font-semibold">—</div></div>
+                            <div><div class="text-gray-500 mb-1">Max DD</div><div class="font-semibold">—</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-5 py-3 bg-navy/50 text-xs text-gray-600">
+                    Past performance does not guarantee future results. Backtest excludes trading fees.
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         PRICING
+    ══════════════════════════════════════ -->
+    <section id="pricing" class="relative z-10 bg-darkPanel/30 border-y border-white/5 py-24">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <div class="text-xs font-bold tracking-widest text-cyan uppercase mb-4">Pricing</div>
+                <h2 class="text-4xl font-extrabold mb-4">Simple, Transparent Plans</h2>
+                <p class="text-gray-400 max-w-xl mx-auto">Start free, upgrade when you're ready. No hidden fees, cancel anytime.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+
+                <!-- Free -->
+                <div class="pricing-card bg-darkCard rounded-2xl border border-gray-800 p-8 flex flex-col">
+                    <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Free</div>
+                    <div class="text-5xl font-black mb-2">$0</div>
+                    <div class="text-gray-500 text-sm mb-8">Forever free</div>
+                    <ul class="space-y-3 text-sm text-gray-300 mb-10 flex-1">
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>BTC/USDT &amp; ETH/USDT signals</li>
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Signals delayed <span class="text-yellow-400 font-semibold">24 hours</span></li>
+                        <li class="flex items-center gap-3 text-gray-600"><svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>No expert market thesis</li>
+                        <li class="flex items-center gap-3 text-gray-600"><svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>No altcoin signals</li>
+                    </ul>
+                    <a href="#" class="block text-center border border-gray-700 text-white px-6 py-3 rounded-xl font-semibold hover:border-gray-500 transition-colors">
+                        Join Free Channel
+                    </a>
+                </div>
+
+                <!-- VIP — Popular -->
+                <div class="pricing-card pricing-popular bg-darkCard rounded-2xl border border-cyan/40 p-8 flex flex-col relative">
+                    <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple to-cyan text-white text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap">
+                        MOST POPULAR
+                    </div>
+                    <div class="text-sm font-bold text-cyan uppercase tracking-wider mb-4">VIP</div>
+                    <div class="text-5xl font-black mb-1">$89</div>
+                    <div class="text-gray-500 text-sm mb-8">per month · USDT</div>
+                    <ul class="space-y-3 text-sm text-gray-300 mb-10 flex-1">
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 text-cyan flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Signals delivered <strong class="text-white">1–4 hours ahead</strong> of the crowd</li>
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 text-cyan flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><strong class="text-white">20 top coins</strong> tracked &amp; analysed</li>
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 text-cyan flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Expert market thesis (multi-source intelligence)</li>
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 text-cyan flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Full score breakdown + win rate estimate</li>
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 text-cyan flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Multi-timeframe confirmation + coin selector</li>
+                    </ul>
+                    <a href="#" class="block text-center btn-primary text-white px-6 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(0,229,255,0.2)]">
+                        Join VIP Channel
+                    </a>
+                </div>
+
+                <!-- PRO -->
+                <div class="pricing-card bg-darkCard rounded-2xl border border-gray-800 p-8 flex flex-col card-glow-purple">
+                    <div class="text-sm font-bold uppercase tracking-wider mb-4" style="color:#7000FF">PRO</div>
+                    <div class="text-5xl font-black mb-1">$199</div>
+                    <div class="text-gray-500 text-sm mb-8">per month · USDT</div>
+                    <ul class="space-y-3 text-sm text-gray-300 mb-10 flex-1">
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 flex-shrink-0" style="color:#7000FF" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Everything in VIP</li>
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 flex-shrink-0" style="color:#7000FF" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><strong class="text-white">Full coin universe</strong> — select any tracked asset</li>
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 flex-shrink-0" style="color:#7000FF" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Custom watchlist &amp; alert configuration</li>
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 flex-shrink-0" style="color:#7000FF" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Priority signal delivery + backtest data</li>
+                        <li class="flex items-center gap-3"><svg class="w-4 h-4 flex-shrink-0" style="color:#7000FF" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>Dedicated 1-on-1 support</li>
+                    </ul>
+                    <a href="#" class="block text-center border text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple/10 transition-colors" style="border-color:rgba(112,0,255,0.6);color:#7000FF">
+                        Get PRO Access
+                    </a>
+                </div>
+
+            </div>
+            <p class="text-center text-gray-600 text-xs mt-8">All payments processed via USDT (TRC20/BEP20). Subscriptions renew monthly.</p>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         FAQ
+    ══════════════════════════════════════ -->
+    <section class="relative z-10 max-w-3xl mx-auto px-6 py-24">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-extrabold mb-3">Frequently Asked Questions</h2>
+            <p class="text-gray-400 text-sm">Can't find your answer? Reach us on Telegram.</p>
+        </div>
+        <div class="space-y-4">
+
+            <details class="bg-darkCard border border-gray-800 rounded-xl group" open>
+                <summary class="flex justify-between items-center px-6 py-4 cursor-pointer list-none font-semibold text-sm hover:text-cyan transition-colors">
+                    How accurate are the signals?
+                    <svg class="w-4 h-4 text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <div class="px-6 pb-5 text-sm text-gray-400 leading-relaxed border-t border-gray-800 pt-4">
+                    Our BTC/USDT backtest shows a 59.8% BUY win rate over ~333 days of 4H data. This is measured on real historical data with no lookahead bias. No signal system is 100% accurate — always manage risk with position sizing.
+                </div>
+            </details>
+
+            <details class="bg-darkCard border border-gray-800 rounded-xl group">
+                <summary class="flex justify-between items-center px-6 py-4 cursor-pointer list-none font-semibold text-sm hover:text-cyan transition-colors">
+                    Do I need a Binance account or any APIs?
+                    <svg class="w-4 h-4 text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <div class="px-6 pb-5 text-sm text-gray-400 leading-relaxed border-t border-gray-800 pt-4">
+                    No. Sonarix handles all data fetching and analysis on our end. You simply join the Telegram channel and receive formatted signals. No setup required.
+                </div>
+            </details>
+
+            <details class="bg-darkCard border border-gray-800 rounded-xl group">
+                <summary class="flex justify-between items-center px-6 py-4 cursor-pointer list-none font-semibold text-sm hover:text-cyan transition-colors">
+                    How often are signals generated?
+                    <svg class="w-4 h-4 text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <div class="px-6 pb-5 text-sm text-gray-400 leading-relaxed border-t border-gray-800 pt-4">
+                    The engine runs every hour. Signals are only sent when the confluence score crosses ±40 and the same signal hasn't been sent in the past 4 hours (duplicate suppression). Expect 1–5 signals per day depending on market conditions.
+                </div>
+            </details>
+
+            <details class="bg-darkCard border border-gray-800 rounded-xl group">
+                <summary class="flex justify-between items-center px-6 py-4 cursor-pointer list-none font-semibold text-sm hover:text-cyan transition-colors">
+                    What is the difference between Free and VIP?
+                    <svg class="w-4 h-4 text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <div class="px-6 pb-5 text-sm text-gray-400 leading-relaxed border-t border-gray-800 pt-4">
+                    Free members receive a simplified alert 24 hours after VIP members — by which point the move has already played out. VIP ($89/mo) delivers signals 1–4 hours ahead of the crowd across 20 top coins, with the full score breakdown, expert market thesis, and win rate estimate. PRO ($199/mo) unlocks the complete coin universe with custom watchlist selection.
+                </div>
+            </details>
+
+            <details class="bg-darkCard border border-gray-800 rounded-xl group">
+                <summary class="flex justify-between items-center px-6 py-4 cursor-pointer list-none font-semibold text-sm hover:text-cyan transition-colors">
+                    How do I pay? Can I cancel?
+                    <svg class="w-4 h-4 text-gray-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <div class="px-6 pb-5 text-sm text-gray-400 leading-relaxed border-t border-gray-800 pt-4">
+                    Payments are accepted in USDT via TRC20 or BEP20. Subscriptions are monthly and can be cancelled at any time — access continues until the end of your paid period.
+                </div>
+            </details>
+
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         FINAL CTA
+    ══════════════════════════════════════ -->
+    <section class="relative z-10 border-t border-white/5 py-24">
+        <div class="max-w-3xl mx-auto px-6 text-center">
+            <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan/30 to-transparent"></div>
+            <h2 class="text-4xl md:text-5xl font-extrabold mb-6">
+                Your next entry is<br>
+                <span class="gradient-text glow-text">already in the pipeline.</span>
+            </h2>
+            <p class="text-gray-400 text-lg mb-10 max-w-xl mx-auto">
+                The engine runs every hour regardless of who is watching. Signals are generated, scored, and queued. The only variable is whether you are in position when they arrive.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#" class="btn-primary text-white px-10 py-4 rounded-xl font-bold text-lg shadow-[0_0_30px_rgba(0,229,255,0.2)]">
+                    Join Free Channel
+                </a>
+                <a href="#pricing" class="border border-cyan/40 text-cyan px-10 py-4 rounded-xl font-bold text-lg hover:bg-cyan/5 transition-colors">
+                    View VIP Plans
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         FOOTER
+    ══════════════════════════════════════ -->
+    <footer class="relative z-10 border-t border-white/5 bg-darkPanel/40">
+        <div class="max-w-7xl mx-auto px-6 py-12">
+            <div class="grid md:grid-cols-4 gap-10">
+                <div class="md:col-span-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg width="28" height="28" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="200" height="200" rx="40" fill="#0B0F19"/>
+                            <path d="M 40 40 A 60 60 0 0 0 40 160" fill="none" stroke="#00E5FF" stroke-width="12" stroke-linecap="round" opacity="0.5"/>
+                            <path d="M 70 70 A 30 30 0 0 0 70 130" fill="none" stroke="#00E5FF" stroke-width="12" stroke-linecap="round" opacity="0.8"/>
+                            <line x1="110" y1="60" x2="110" y2="140" stroke="#00E5FF" stroke-width="12" stroke-linecap="round"/>
+                            <line x1="150" y1="40" x2="150" y2="160" stroke="#7000FF" stroke-width="12" stroke-linecap="round"/>
+                        </svg>
+                        <span class="font-bold tracking-widest gradient-text text-lg">SONARIX</span>
+                    </div>
+                    <p class="text-gray-500 text-sm leading-relaxed max-w-xs">
+                        Hybrid Quant Engine — combining technical analysis, intelligence aggregated from multiple sources and interpreted by market experts, and backtested strategy into a single actionable signal.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Product</h4>
+                    <ul class="space-y-2.5 text-sm text-gray-400">
+                        <li><a href="#features"     class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#backtest"     class="hover:text-white transition-colors">Performance</a></li>
+                        <li><a href="#pricing"      class="hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#"             class="hover:text-white transition-colors">API Docs</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Community</h4>
+                    <ul class="space-y-2.5 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Free Telegram Channel</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">VIP Channel</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Twitter / X</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Discord</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-10 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-600">
+                <span>© 2025 Sonarix. All rights reserved.</span>
+                <span class="text-center">Signals are for informational purposes only. Not financial advice. Always do your own research.</span>
+            </div>
+        </div>
+    </footer>
+
 </body>
 </html>
+
