@@ -42,6 +42,15 @@ _SYMBOLS = [s.strip().replace("/", "") for s in os.getenv("SYMBOLS", "BTC/USDT,E
 
 
 # ─────────────────────────────────────────────────────────────
+# Health endpoint (no DB hit — used by Railway probes)
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/healthz", response_class=JSONResponse)
+async def healthz():
+    return {"ok": True, "service": "crypto-hybrid-bot"}
+
+
+# ─────────────────────────────────────────────────────────────
 # API Endpoints
 # ─────────────────────────────────────────────────────────────
 
