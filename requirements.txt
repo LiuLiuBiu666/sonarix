@@ -1,0 +1,3 @@
+# Thư viện dùng chung cho tất cả module
+python-dotenv==1.0.1
+supabase==2.7.4

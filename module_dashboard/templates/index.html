@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Crypto Hybrid Bot — Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
+    .navbar { background: #161b22; border-bottom: 1px solid #30363d; }
+    .card  { background: #161b22; border: 1px solid #30363d; border-radius: 12px; }
+    .card-header { background: #21262d; border-bottom: 1px solid #30363d; font-weight: 600; }
+    .badge-buy  { background: #1a7f37; color: #3fb950; border: 1px solid #2ea043; }
+    .badge-sell { background: #6e1c1c; color: #f85149; border: 1px solid #da3633; }
+    .badge-hold { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+    .score-positive { color: #3fb950; font-weight: 700; }
+    .score-negative { color: #f85149; font-weight: 700; }
+    .score-neutral  { color: #8b949e; }
+    .stat-card { text-align: center; padding: 16px; }
+    .stat-value { font-size: 2rem; font-weight: 700; }
+    .stat-label { font-size: 0.8rem; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+    .signal-row:hover { background: #21262d; }
+    .loading { color: #8b949e; font-style: italic; }
+    .live-dot { display: inline-block; width: 8px; height: 8px; background: #3fb950;
+                border-radius: 50%; animation: pulse 2s infinite; margin-right: 6px; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .progress-score { height: 6px; border-radius: 3px; background: #21262d; }
+    .last-update { font-size: 0.75rem; color: #8b949e; }
+    table { font-size: 0.85rem; }
+    th { color: #8b949e !important; font-weight: 500; border-color: #30363d !important; }
+    td { border-color: #21262d !important; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-dark px-4 py-2 mb-4">
+  <span class="navbar-brand fw-bold">
+    <i class="bi bi-cpu-fill text-success me-2"></i>Crypto Hybrid Bot
+  </span>
+  <span class="text-muted small">
+    <span class="live-dot"></span>
+    <span id="last-update" class="last-update">Đang tải...</span>
+  </span>
+</nav>
+
+<div class="container-fluid px-4">
+
+  <!-- Stats Row -->
+  <div class="row g-3 mb-4" id="stats-row">
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="stat-value score-positive" id="stat-buy">—</div>
+        <div class="stat-label"><i class="bi bi-arrow-up-circle"></i> BUY Hôm Nay</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="stat-value score-negative" id="stat-sell">—</div>
+        <div class="stat-label"><i class="bi bi-arrow-down-circle"></i> SELL Hôm Nay</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="stat-value text-warning" id="stat-total">—</div>
+        <div class="stat-label"><i class="bi bi-bar-chart"></i> Tổng Tín Hiệu</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card">
+        <div class="stat-value text-info" id="stat-lastrun">—</div>
+        <div class="stat-label"><i class="bi bi-clock-history"></i> Lần Chạy Cuối</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest Signals per Symbol -->
+  <div class="row g-3 mb-4" id="symbol-cards">
+    {% for symbol in symbols %}
+    <div class="col-12 col-md-4">
+      <div class="card" id="card-{{ symbol }}">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-currency-bitcoin me-1"></i>{{ symbol }}</span>
+          <span class="badge badge-hold rounded-pill" id="badge-{{ symbol }}">LOADING</span>
+        </div>
+        <div class="card-body">
+          <div class="row text-center g-2">
+            <div class="col-4">
+              <div class="small text-muted">Final</div>
+              <div class="fw-bold" id="score-{{ symbol }}">—</div>
+            </div>
+            <div class="col-4">
+              <div class="small text-muted">Tech</div>
+              <div id="tech-{{ symbol }}">—</div>
+            </div>
+            <div class="col-4">
+              <div class="small text-muted">Win Rate</div>
+              <div id="wr-{{ symbol }}">—</div>
+            </div>
+          </div>
+          <div class="progress progress-score mt-2">
+            <div class="progress-bar" id="bar-{{ symbol }}" style="width:0%"></div>
+          </div>
+          <div class="text-muted small mt-2" id="time-{{ symbol }}">—</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Main Content -->
+  <div class="row g-3">
+
+    <!-- Signal History Table -->
+    <div class="col-12 col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-table me-2"></i>Lịch Sử Tín Hiệu
+          <button class="btn btn-sm btn-outline-secondary float-end" onclick="loadSignals()">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Action</th>
+                  <th>Score</th>
+                  <th>Win Rate</th>
+                  <th>Thời gian</th>
+                  <th>Đã gửi</th>
+                </tr>
+              </thead>
+              <tbody id="signals-tbody">
+                <tr><td colspan="6" class="text-center loading py-4">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backtest Results -->
+    <div class="col-12 col-lg-4">
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-graph-up-arrow me-2"></i>Kết Quả Backtest
+        </div>
+        <div class="card-body" id="backtest-body">
+          <div class="loading text-center py-3">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /row -->
+</div><!-- /container -->
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────
+function scoreClass(score) {
+  if (score > 0)  return 'score-positive';
+  if (score < 0)  return 'score-negative';
+  return 'score-neutral';
+}
+
+function actionBadge(action) {
+  const map = { BUY:'badge-buy', SELL:'badge-sell', HOLD:'badge-hold' };
+  return `<span class="badge ${map[action]||'badge-hold'} rounded-pill">${action}</span>`;
+}
+
+function relativeTime(isoStr) {
+  if (!isoStr) return '—';
+  const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+  if (diff < 60)  return `${diff}s trước`;
+  if (diff < 3600) return `${Math.floor(diff/60)}ph trước`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h trước`;
+  return `${Math.floor(diff/86400)}d trước`;
+}
+
+function fmtScore(v) {
+  if (v == null) return '—';
+  const c = scoreClass(v);
+  return `<span class="${c}">${v > 0 ? '+' : ''}${Number(v).toFixed(1)}</span>`;
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch('/api/stats');
+    const d = await r.json();
+    if (!d.ok) return;
+    const s = d.data;
+    document.getElementById('stat-buy').textContent   = s.today.buy;
+    document.getElementById('stat-sell').textContent  = s.today.sell;
+    document.getElementById('stat-total').textContent = s.all_time.total_signals;
+
+    // Thời gian lần chạy cuối
+    const lr = s.last_run ? relativeTime(s.last_run) : 'Chưa chạy';
+    document.getElementById('stat-lastrun').textContent = lr;
+    document.getElementById('last-update').textContent = 'Cập nhật: ' + new Date().toLocaleTimeString('vi-VN');
+  } catch(e) { console.error('loadStats:', e); }
+}
+
+// ── Latest Signals (symbol cards) ─────────────────────────────
+async function loadLatest() {
+  try {
+    const r = await fetch('/api/latest');
+    const d = await r.json();
+    if (!d.ok) return;
+
+    // Also load recent tech scores for symbol cards
+    const techR = await fetch('/api/tech?limit=30');
+    const techD = await techR.json();
+    const techBySymbol = {};
+    if (techD.ok) {
+      techD.data.forEach(t => { if (!techBySymbol[t.symbol]) techBySymbol[t.symbol] = t.tech_score; });
+    }
+
+    d.data.forEach(sig => {
+      const sym = sig.symbol;
+      const badge  = document.getElementById(`badge-${sym}`);
+      const scoreEl = document.getElementById(`score-${sym}`);
+      const techEl = document.getElementById(`tech-${sym}`);
+      const wrEl   = document.getElementById(`wr-${sym}`);
+      const barEl  = document.getElementById(`bar-${sym}`);
+      const timeEl = document.getElementById(`time-${sym}`);
+
+      if (!badge) return;
+
+      const action = sig.action;
+      badge.textContent = action;
+      badge.className = `badge ${action==='BUY'?'badge-buy':action==='SELL'?'badge-sell':'badge-hold'} rounded-pill`;
+
+      scoreEl.innerHTML = fmtScore(sig.final_score);
+      techEl.innerHTML  = techBySymbol[sym] != null ? fmtScore(techBySymbol[sym]) : '—';
+      wrEl.textContent  = sig.win_rate_estimated ? (sig.win_rate_estimated*100).toFixed(0)+'%' : '—';
+      timeEl.textContent = relativeTime(sig.created_at);
+
+      // Progress bar
+      const pct = Math.min(Math.abs(sig.final_score), 100);
+      barEl.style.width = pct + '%';
+      barEl.className = `progress-bar ${action==='BUY'?'bg-success':action==='SELL'?'bg-danger':'bg-secondary'}`;
+    });
+  } catch(e) { console.error('loadLatest:', e); }
+}
+
+// ── Signal History Table ──────────────────────────────────────
+async function loadSignals() {
+  const tbody = document.getElementById('signals-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center loading py-4">Đang tải...</td></tr>';
+  try {
+    const r = await fetch('/api/signals?limit=25');
+    const d = await r.json();
+    if (!d.ok) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Lỗi tải dữ liệu</td></tr>'; return; }
+
+    if (!d.data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Chưa có tín hiệu nào</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = d.data.map(sig => `
+      <tr class="signal-row">
+        <td><strong>${sig.symbol}</strong></td>
+        <td>${actionBadge(sig.action)}</td>
+        <td>${fmtScore(sig.final_score)}</td>
+        <td>${sig.win_rate_estimated ? (sig.win_rate_estimated*100).toFixed(0)+'%' : '—'}</td>
+        <td class="text-muted">${relativeTime(sig.created_at)}</td>
+        <td>${sig.is_sent ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-clock text-warning"></i>'}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Lỗi kết nối</td></tr>';
+  }
+}
+
+// ── Backtest Results ──────────────────────────────────────────
+async function loadBacktest() {
+  const body = document.getElementById('backtest-body');
+  try {
+    const r = await fetch('/api/backtest');
+    const d = await r.json();
+    if (!d.ok || !d.data.length) {
+      body.innerHTML = '<div class="text-muted small text-center py-3">Chưa có dữ liệu backtest.<br>Chạy: <code>python -m module_backtest.main_backtest</code></div>';
+      return;
+    }
+
+    body.innerHTML = d.data.map(bt => `
+      <div class="mb-3 pb-3 border-bottom border-secondary">
+        <div class="d-flex justify-content-between mb-1">
+          <strong>${bt.symbol}</strong>
+          <span class="badge ${bt.win_rate >= 0.55 ? 'bg-success' : bt.win_rate >= 0.5 ? 'bg-warning text-dark' : 'bg-danger'} rounded-pill">
+            WR ${(bt.win_rate*100).toFixed(1)}%
+          </span>
+        </div>
+        <div class="row text-center g-1 small">
+          <div class="col-4">
+            <div class="text-muted">Trades</div>
+            <div>${bt.total_trades}</div>
+          </div>
+          <div class="col-4">
+            <div class="text-muted">PF</div>
+            <div class="${bt.profit_factor >= 1.5 ? 'text-success' : 'text-warning'}">${bt.profit_factor?.toFixed(2) ?? '—'}</div>
+          </div>
+          <div class="col-4">
+            <div class="text-muted">Sharpe</div>
+            <div class="${bt.sharpe_ratio >= 0.5 ? 'text-success' : 'text-warning'}">${bt.sharpe_ratio?.toFixed(2) ?? '—'}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted">Total PnL</div>
+            <div class="${bt.total_pnl_pct >= 0 ? 'score-positive' : 'score-negative'}">${bt.total_pnl_pct > 0 ? '+' : ''}${bt.total_pnl_pct?.toFixed(1)}%</div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted">Max DD</div>
+            <div class="text-warning">${bt.max_drawdown_pct?.toFixed(1)}%</div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    body.innerHTML = '<div class="text-danger small">Lỗi tải backtest</div>';
+  }
+}
+
+// ── Init & Auto-refresh ───────────────────────────────────────
+async function refresh() {
+  await Promise.all([loadStats(), loadLatest(), loadSignals(), loadBacktest()]);
+}
+
+refresh();
+setInterval(refresh, 60_000);  // Tự động refresh mỗi 60 giây
+</script>
+</body>
+</html>
