@@ -137,25 +137,25 @@
                     </div>
                     <div class="flex justify-between items-start mb-5 pb-4 border-b border-gray-800">
                         <div>
-                            <h3 class="text-lg font-bold">BTC / USDT</h3>
-                            <span class="text-gray-500 text-xs">4H · Binance · Multi-TF Confirmed</span>
+                            <h3 class="text-lg font-bold" id="lc-symbol">BTC / USDT</h3>
+                            <span class="text-gray-500 text-xs" id="lc-meta">4H · Multi-TF Confirmed</span>
                         </div>
                         <div class="text-right">
-                            <div class="text-xl font-bold text-green-400">$64,250.00</div>
-                            <span class="text-green-500/80 text-xs">+2.4% (24h)</span>
+                            <div class="text-xl font-bold text-green-400" id="lc-price">—</div>
+                            <span class="text-green-500/80 text-xs" id="lc-time">Updating...</span>
                         </div>
                     </div>
                     <div class="bg-darkCard rounded-xl p-4 mb-4 border border-gray-800/60">
                         <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Confluence Score</div>
                         <div class="flex items-center gap-4">
-                            <div class="text-4xl font-black text-cyan">+65</div>
+                            <div class="text-4xl font-black text-cyan" id="lc-score">—</div>
                             <div class="flex-1">
                                 <div class="w-full bg-gray-800 rounded-full h-2 mb-1.5">
-                                    <div class="bg-gradient-to-r from-purple to-cyan h-2 rounded-full" style="width:82%"></div>
+                                    <div class="bg-gradient-to-r from-purple to-cyan h-2 rounded-full" id="lc-bar" style="width:50%"></div>
                                 </div>
-                                <div class="text-xs text-gray-500">Signal strength: Strong</div>
+                                <div class="text-xs text-gray-500" id="lc-strength">Loading...</div>
                             </div>
-                            <div class="text-xs font-bold text-cyan bg-cyan/10 border border-cyan/30 px-2.5 py-1 rounded-md">STRONG BUY</div>
+                            <div class="text-xs font-bold text-cyan bg-cyan/10 border border-cyan/30 px-2.5 py-1 rounded-md" id="lc-action">—</div>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3 mb-4">
@@ -164,21 +164,21 @@
                                 <svg class="w-4 h-4 text-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4"/></svg>
                                 <span class="text-xs font-bold text-cyan">Technical</span>
                             </div>
-                            <div class="text-lg font-bold text-white mb-0.5">+70</div>
-                            <p class="text-xs text-gray-500">RSI 55, above EMA200. MACD crossover confirmed.</p>
+                            <div class="text-lg font-bold text-white mb-0.5" id="lc-tech">—</div>
+                            <p class="text-xs text-gray-500" id="lc-tech-desc">Calculating indicators...</p>
                         </div>
                         <div class="bg-darkCard rounded-xl p-3.5 border border-gray-800/60">
                             <div class="flex items-center gap-1.5 mb-2">
                                 <svg class="w-4 h-4 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>
                                 <span class="text-xs font-bold text-purple">Market Pulse</span>
                             </div>
-                            <div class="text-lg font-bold text-white mb-0.5">+55</div>
-                            <p class="text-xs text-gray-500">Multi-source aggregation: Bullish consensus. Smart money accumulating.</p>
+                            <div class="text-lg font-bold text-white mb-0.5" id="lc-sent">—</div>
+                            <p class="text-xs text-gray-500" id="lc-sent-desc">Aggregating sources...</p>
                         </div>
                     </div>
                     <div class="flex items-center justify-between text-xs text-gray-500 bg-darkCard rounded-lg px-3 py-2.5 border border-gray-800/60">
                         <span>Estimated Win Rate</span>
-                        <span class="font-bold text-green-400">72%</span>
+                        <span class="font-bold text-green-400" id="lc-winrate">—</span>
                     </div>
                 </div>
             </div>
@@ -718,6 +718,162 @@
         </div>
     </footer>
 
+<script>
+(function () {
+    const PREFERRED = 'BTCUSDT';
+
+    function scoreLabel(s) {
+        const a = Math.abs(s);
+        if (a >= 70) return 'Signal strength: Very Strong';
+        if (a >= 50) return 'Signal strength: Strong';
+        if (a >= 30) return 'Signal strength: Moderate';
+        return 'Signal strength: Weak';
+    }
+    function actionLabel(a) {
+        if (!a) return '—';
+        const map = { 'BUY': 'STRONG BUY', 'SELL': 'STRONG SELL', 'HOLD': 'HOLD' };
+        return map[a.toUpperCase()] || a;
+    }
+    function actionColor(a) {
+        if (!a) return '';
+        const u = a.toUpperCase();
+        if (u === 'BUY')  return 'color:#00E5FF';
+        if (u === 'SELL') return 'color:#f85149';
+        return 'color:#8b949e';
+    }
+    function fmt(v) { return v > 0 ? '+' + v : String(v); }
+    function timeAgo(iso) {
+        if (!iso) return '';
+        const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+        if (diff < 1)  return 'Just now';
+        if (diff < 60) return diff + 'm ago';
+        return Math.floor(diff / 60) + 'h ago';
+    }
+
+    async function fetchAndUpdate() {
+        try {
+            const res = await fetch('/api/latest', { cache: 'no-store' });
+            if (!res.ok) return;
+            const json = await res.json();
+            const data = json.data;
+            if (!data || !data.length) return;
+
+            let sig = data.find(d => d.symbol === PREFERRED)
+                   || data.find(d => d.action !== 'HOLD')
+                   || data[0];
+
+            const score  = sig.final_score ?? 0;
+            const action = sig.action || 'HOLD';
+            const wr     = sig.win_rate_estimated != null
+                           ? (sig.win_rate_estimated * 100).toFixed(0) + '%' : '—';
+            const barPct = Math.min(Math.abs(score), 100);
+            const sym    = (sig.symbol || 'BTCUSDT').replace('USDT', '/USDT');
+
+            // Estimate tech/sent split (60/40 weight as per config)
+            const techEst = Math.round(score / 0.6);
+            const sentEst = Math.round(score / 0.4);
+
+            document.getElementById('lc-symbol').textContent   = sym;
+            document.getElementById('lc-meta').textContent     = 'Multi-TF Confirmed';
+            document.getElementById('lc-price').textContent    = '';
+            document.getElementById('lc-time').textContent     = timeAgo(sig.created_at);
+            document.getElementById('lc-score').textContent    = fmt(Math.round(score));
+            document.getElementById('lc-bar').style.width      = barPct + '%';
+            document.getElementById('lc-strength').textContent = scoreLabel(score);
+            const actionEl = document.getElementById('lc-action');
+            actionEl.textContent = actionLabel(action);
+            actionEl.style       = actionColor(action);
+            document.getElementById('lc-tech').textContent     = fmt(techEst);
+            document.getElementById('lc-tech-desc').textContent= 'RSI · EMA200 · MACD · Bollinger Bands';
+            document.getElementById('lc-sent').textContent     = fmt(sentEst);
+            document.getElementById('lc-sent-desc').textContent= 'AI sentiment · News aggregation';
+            document.getElementById('lc-winrate').textContent  = wr;
+        } catch (e) {
+            console.warn('Live signal fetch failed:', e);
+        }
+    }
+
+    fetchAndUpdate();
+    setInterval(fetchAndUpdate, 60000);
+})();
+</script>
+</body>
+</html>
+
+    function scoreLabel(s) {
+        const a = Math.abs(s);
+        if (a >= 70) return 'Signal strength: Very Strong';
+        if (a >= 50) return 'Signal strength: Strong';
+        if (a >= 30) return 'Signal strength: Moderate';
+        return 'Signal strength: Weak';
+    }
+    function actionLabel(action) {
+        if (!action) return '—';
+        const map = { 'BUY': 'STRONG BUY', 'SELL': 'STRONG SELL', 'HOLD': 'HOLD' };
+        return map[action.toUpperCase()] || action;
+    }
+    function actionColor(action) {
+        if (!action) return '';
+        const a = action.toUpperCase();
+        if (a === 'BUY')  return 'color:#00E5FF';
+        if (a === 'SELL') return 'color:#f85149';
+        return 'color:#8b949e';
+    }
+    function fmt(v) { return v > 0 ? '+' + v : String(v); }
+    function timeAgo(iso) {
+        if (!iso) return '';
+        const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+        if (diff < 1)  return 'Just now';
+        if (diff < 60) return diff + 'm ago';
+        return Math.floor(diff / 60) + 'h ago';
+    }
+
+    async function fetchAndUpdate() {
+        try {
+            const res = await fetch('/api/latest', { cache: 'no-store' });
+            if (!res.ok) return;
+            const json = await res.json();
+            const data = json.data;
+            if (!data || !data.length) return;
+
+            // Pick preferred symbol, else first BUY/SELL, else first
+            let sig = data.find(d => d.symbol === PREFERRED)
+                   || data.find(d => d.final_action !== 'HOLD')
+                   || data[0];
+
+            const score   = sig.final_score   ?? sig.tech_score ?? 0;
+            const techS   = sig.tech_score     ?? 0;
+            const sentS   = sig.sentiment_score ?? 0;
+            const action  = sig.final_action   || sig.action || 'HOLD';
+            const wr      = sig.win_rate != null ? (sig.win_rate * 100).toFixed(0) + '%' : '—';
+            const barPct  = Math.min(Math.abs(score), 100);
+            const sym     = (sig.symbol || 'BTC/USDT').replace('USDT', '/USDT');
+            const tf      = sig.timeframe || '4H';
+
+            document.getElementById('lc-symbol').textContent    = sym;
+            document.getElementById('lc-meta').textContent      = tf + ' · Multi-TF Confirmed';
+            document.getElementById('lc-price').textContent     = sig.close_price ? '$' + Number(sig.close_price).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+            document.getElementById('lc-time').textContent      = timeAgo(sig.created_at);
+            document.getElementById('lc-score').textContent     = fmt(Math.round(score));
+            document.getElementById('lc-bar').style.width       = barPct + '%';
+            document.getElementById('lc-strength').textContent  = scoreLabel(score);
+            const actionEl = document.getElementById('lc-action');
+            actionEl.textContent = actionLabel(action);
+            actionEl.style       = actionColor(action);
+            document.getElementById('lc-tech').textContent      = fmt(Math.round(techS));
+            document.getElementById('lc-tech-desc').textContent = sig.tech_summary || 'Multi-indicator confluence analysis';
+            document.getElementById('lc-sent').textContent      = fmt(Math.round(sentS));
+            document.getElementById('lc-sent-desc').textContent = sig.sentiment_summary || 'Market pulse aggregation';
+            document.getElementById('lc-winrate').textContent   = wr;
+        } catch (e) {
+            console.warn('Live signal fetch failed:', e);
+        }
+    }
+
+    fetchAndUpdate();
+    setInterval(fetchAndUpdate, 60000); // refresh every 60s
+})();
+</script>
 </body>
 </html>
 
